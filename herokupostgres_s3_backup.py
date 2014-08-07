@@ -104,4 +104,4 @@ if __name__ == '__main__':
         sys.exit(1)
     print 'Upload to S3 completed successfully'
     # Delete the local backup file, to not take up excessive disk space
-    #delete_local_backup_file(filename)
+    delete_local_backup_file(filename)
