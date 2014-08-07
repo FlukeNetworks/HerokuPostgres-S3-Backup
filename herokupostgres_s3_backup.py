@@ -5,17 +5,17 @@ Unfortunately, depends on the heroku toolbelt, since there is no standard API fo
 Be sure that you are logged in to the heroku toolbelt before you run this script, and that it is in your $PATH.
 
 Usage:
-herokupostgres_s3_backup.py -a <app_name> -r <path_to_heroku> -b <bucket> -k <aws_key_id> -s <aws_secret> -p <s3_key_prefix>
+herokupostgres_s3_backup.py  -r <path_to_heroku> -a <app_name>  -b <bucket> -k <aws_key_id> -s <aws_secret> -p <s3_key_prefix>
 herokupostgres_s3_backup.py (-h | --help)
 
 Options:
 -h --help      Show this screen.
--a <app_name> --app=<app_name>                 Heroku App name.
--r <path_to_heroku> --herokupath=<path_to_heroku> location where the heroku executable lives. needs trailing /. [default: '']
--b <bucket> --bucket=<bucket>                  S3 Bucket name
--k <aws_key_id> --awskey=<aws_key_id>          AWS Key ID
--s <aws_secret> --awssecret=<aws_secret>       AWS Secret Key
--p <s3_key_prefix> --prefix=<s3_key_prefix     Prefixes filename of S3 object [default: '']
+-a <app_name> --app=<app_name>                     Heroku App name.
+-r <path_to_heroku> --herokupath=<path_to_heroku>  location where the heroku executable lives, needs trailing slash
+-b <bucket> --bucket=<bucket>                      S3 Bucket name
+-k <aws_key_id> --awskey=<aws_key_id>              AWS Key ID
+-s <aws_secret> --awssecret=<aws_secret>           AWS Secret Key
+-p <s3_key_prefix> --prefix=<s3_key_prefix         Prefixes filename of S3 object
 """
 import requests
 import math
@@ -34,7 +34,7 @@ def get_backup(heroku_path, app_name):
     # first, get the heroku pgbackups:url from the heroku toolbelt
     print 'Looking up backup URL for:{0}'.format(app_name)
     #'Shelling out' isn't ideal in this situation, but it is the path of least resistance for now.
-    backup_url = subprocess.check_output(heroku_path + 'heroku pgbackups:url --app {0}'.format(app_name), shell=True)
+    backup_url = subprocess.check_output(heroku_path + 'heroku pgbackups:url --app {0}'.format(app_name), shell=True).rstrip()
     # download the file to disk. Stream, since the file could potentially be large
     print 'Downloading backup from:{0}'.format(backup_url)
     #We need to timestamp our own, since the backup url just gets the 'latest'
@@ -104,4 +104,4 @@ if __name__ == '__main__':
         sys.exit(1)
     print 'Upload to S3 completed successfully'
     # Delete the local backup file, to not take up excessive disk space
-    delete_local_backup_file(filename)
+    #delete_local_backup_file(filename)
