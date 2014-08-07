@@ -13,6 +13,11 @@ $ pip install -r requirements.txt
 
 ```
 
+Ensure that the Heroku toolbelt is installed and you are logged in.
+```bash
+$ heroku login
+```
+
 View help
 
 ```bash
@@ -20,12 +25,13 @@ $ herokupostgres_s3_backup.py --help
 
 ```
 
-To get the URL of your pgbackups, use the Heroku Toolbelt.
+To get the URL of your pgbackups, The program uses the Heroku Toolbelt.
 ```bash
 $ heroku pgbackups:url --app myAppName
 "https://some-pgbackups-url.com/"
 ```
-This URL will then be part of the script parameters.
+This must be done because the output of pgbackups:url changes as new backups are created.
+The Heroku toolbelt is used because there is no standard api to fetch PG backups.
 
 ##Contributing
 Pull requests and suggestions welcome!

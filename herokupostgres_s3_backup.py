@@ -1,15 +1,17 @@
 #! /usr/bin/env python
 """Heroku Postgres Backup to S3 Utility.
-Uses the Heroku PG-Backups system to pull the latest backup for a database, and put the file on Amazon S3
+Uses the Heroku PG-Backups system to pull the latest backup for a database, and put the file on Amazon S3.
+Unfortunately, depends on the heroku toolbelt, since there is no standard API for PGBackups (that we have found).
+Be sure that you are logged in to the heroku toolbelt before you run this script, and that it is in your $PATH.
 
 Usage:
-herokupostgres_s3_backup.py -n <backup_filename_prefix> -u <heroku_postgres_download_url> -b <bucket> -k <aws_key_id> -s <aws_secret> -p <s3_key_prefix>
+herokupostgres_s3_backup.py -a <app_name> -r <path_to_heroku> -b <bucket> -k <aws_key_id> -s <aws_secret> -p <s3_key_prefix>
 herokupostgres_s3_backup.py (-h | --help)
 
 Options:
 -h --help      Show this screen.
--u <heroku_postgres_download_url> --url=<heroku_postgres_download_url>  PG-Backups url from Heroku. Find this by running `heroku pgbackups:url`
--n <backup_filename_prefix> --name=<backup_filename_prefix>      Prefix for the output filename of the backup
+-a <app_name> --app=<app_name>                 Heroku App name.
+-r <path_to_heroku> --herokupath=<path_to_heroku> location where the heroku executable lives. needs trailing /. [default: '']
 -b <bucket> --bucket=<bucket>                  S3 Bucket name
 -k <aws_key_id> --awskey=<aws_key_id>          AWS Key ID
 -s <aws_secret> --awssecret=<aws_secret>       AWS Secret Key
@@ -20,17 +22,23 @@ import math
 import os
 import sys
 import datetime
+import subprocess
 from docopt import docopt
 import boto
 from filechunkio import FileChunkIO
 
 
-# Gets the latest backup for a given database and account.
-def get_backup(backup_url, backup_prefix):
+# Gets the latest backup for a given app
+# Relies on the heroku cli toolbelt to talk to PGBackups
+def get_backup(heroku_path, app_name):
+    # first, get the heroku pgbackups:url from the heroku toolbelt
+    print 'Looking up backup URL for:{0}'.format(app_name)
+    #'Shelling out' isn't ideal in this situation, but it is the path of least resistance for now.
+    backup_url = subprocess.check_output(heroku_path + 'heroku pgbackups:url --app {0}'.format(app_name), shell=True)
     # download the file to disk. Stream, since the file could potentially be large
-    print 'Downloading Backup from:{0}'.format(backup_url)
+    print 'Downloading backup from:{0}'.format(backup_url)
     #We need to timestamp our own, since the backup url just gets the 'latest'
-    backup_filename = backup_prefix + '-' + datetime.datetime.now().isoformat()
+    backup_filename = app_name + '-' + datetime.datetime.now().isoformat()
     r = requests.get(backup_url, stream=True)
     with open(backup_filename, 'wb') as f:
         for chunk in r.iter_content(chunk_size=1024):
@@ -75,15 +83,15 @@ def delete_local_backup_file(filename):
 if __name__ == '__main__':
     # grab all the arguments
     arguments = docopt(__doc__, version='herokupostgres_s3_backup 0.0.1')
-    download_url = arguments['--url']
-    backup_prefix = arguments['--name']
+    app_name = arguments['--app']
+    heroku_path = arguments['--herokupath']
     bucket = arguments['--bucket']
     aws_key = arguments['--awskey']
     aws_secret = arguments['--awssecret']
     prefix = arguments['--prefix']
 
     # first, fetch the backup
-    filename = get_backup(download_url, backup_prefix)
+    filename = get_backup(heroku_path, app_name)
     if not filename:
         # we failed to save the backup successfully.
         sys.exit(1)
